@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Марафон похудения</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('/static/images/white-sneakers-pink-weights-with-copy-space-L.jpg');
+            background-size: cover;
+            color: rgb(53, 1, 12);
+            font-family: 'Arial', sans-serif;
+        }
+
+        .day-card {
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 0;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            height: 150px;
+            /*width: 150px;*/
+            width: 100%;
+            overflow: hidden;
+            word-wrap: break-word;
+            background: #f8f9fa;
+        }
+
+        .day-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .day-card .weight {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #dc3545;
+        }
+
+        .day-card .note {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+
+        .measurement-card {
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            background: linear-gradient(to right, #d4f9d4, #b2f5b2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            /*height: 150px;*/
+            /*width: 310px;*/ /* Увеличенная ширина */
+            overflow: hidden;
+            word-wrap: break-word;
+        }
+
+        .measurement-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .measurement-card .title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #155724;
+        }
+
+        .measurement-card .parameters {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+            font-size: 0.9em;
+            color: #0b2e13;
+        }
+
+
+        .icons img {
+            width: 30px;
+            margin: 5px;
+        }
+
+        .col {
+            min-width: 150px;
+            padding: 0;
+        }
+
+        /* Центрирование модального окна */
+        .modal-dialog {
+            max-width: 400px; /* Ограничиваем ширину */
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh; /* Чтобы окно центрировалось по вертикали */
+        }
+
+        /* Стилизация формы внутри модального окна */
+        .modal-content {
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            background: #28a745;
+            color: white;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .modal-title {
+            font-weight: bold;
+        }
+
+        .modal-body {
+            padding: 20px;
+            background: #f9f9f9;
+        }
+
+        .modal-footer {
+            background: #f1f1f1;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+        }
+
+        .form-control {
+            width: 100%;
+            font-size: 0.9rem; 
+        }
+
+        .form-label {
+            font-weight: 600;
+        }
+
+        /* Уменьшенные поля ввода */
+        #weight, #note {
+            max-width: 150px;
+        }
+
+        /* Убираем смещение при открытии модального окна */
+        body.modal-open {
+            padding-right: 0 !important;
+        }
+
+        /* Убираем скролл у body, но не меняем ширину контейнера */
+        .modal {
+            overflow-y: auto;
+            padding-right: 0 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="text-center mb-4">Марафон похудения</h1>
+        <div class="row" id="measurement-container1"></div>
+        <div class="row" id="days-container1"></div>
+        <div class="row" id="measurement-container2"></div>
+        <div class="row" id="days-container2"></div>
+        <div class="row" id="days-container3"></div>
+        <div class="row" id="measurement-container3"></div>
+    </div>
+
+    <!-- Модальное окно для редактирования day-card -->
+    <div class="modal fade" id="editDayModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактирование дня <span id="modal-date"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="dayForm" onsubmit="event.preventDefault(); submitForm();">
+                        <div class="row g-3">
+                            <div class="col-12 d-flex align-items-center">
+                                <label for="weight" class="form-label me-3" style="min-width: 100px;">Вес:</label>
+                                <input type="number" id="weight" class="form-control" min="0" step="0.1" required />
+                            </div>
+                            <div class="col-12 d-flex align-items-center">
+                                <label for="note" class="form-label me-3" style="min-width: 100px;">Примечание:</label>
+                                <input type="text" id="note" class="form-control" required />
+                            </div>
+                            <div class="col-12 d-flex align-items-center">
+                                <label for="menu" class="form-label me-3" style="min-width: 100px;">Меню:</label>
+                                <input type="checkbox" class="form-check-input" id="menu">
+                            </div>
+                            <div class="col-12 d-flex align-items-center">
+                                <label for="workout" class="form-label me-3" style="min-width: 100px;">Трени:</label>
+                                <input type="checkbox" class="form-check-input" id="workout">
+                            </div>
+                            <div class="col-12 text-center">
+                                <button type="submit" class="btn btn-success mt-3">Сохранить</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button> -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для редактирования measurement-card -->
+    <div class="modal fade" id="editMeasurementModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактирование измерений <span id="measurement-modal-date"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="measurementForm" onsubmit="event.preventDefault(); submitMeasurementForm();">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="chest" class="form-label">Грудь:</label>
+                                <input type="number" id="chest" class="form-control" min="0" step="1" required />
+                            </div>
+                            <div class="col-12">
+                                <label for="waist" class="form-label">Талия:</label>
+                                <input type="number" id="waist" class="form-control" min="0" step="1" required />
+                            </div>
+                            <div class="col-12">
+                                <label for="biceps" class="form-label">Бицепс:</label>
+                                <input type="number" id="biceps" class="form-control" min="0" step="1" required />
+                            </div>
+                            <div class="col-12">
+                                <label for="hips" class="form-label">Бедра:</label>
+                                <input type="number" id="hips" class="form-control" min="0" step="1" required />
+                            </div>
+                            <div class="col-12">
+                                <label for="thigh" class="form-label">Бедро:</label>
+                                <input type="number" id="thigh" class="form-control" min="0" step="1" required />
+                            </div>
+                            <div class="col-12">
+                                <label for="knee" class="form-label">Колено:</label>
+                                <input type="number" id="knee" class="form-control" min="0" step="1" required />
+                            </div>
+                            <div class="col-12 text-center">
+                                <button type="submit" class="btn btn-success mt-3">Сохранить</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const days = 21;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 20);
+
+        function formatDate(date) {
+            return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+        }
+
+        function createDayCard(i) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + i);
+            return `
+                <div class="col day-card-col">
+                    <div class="day-card">
+                        <div class="date">${formatDate(currentDate)}</div>
+                        <div class="weight">75.${i} кг</div>
+                        <div class="note">${Math.floor(Math.random() * 5) + 1},${Math.floor(Math.random() * 9)} км</div>
+                        <div class="icons">
+                            ${i % 2 === 0 ? '<img src="/static/images/free-icon-woman-753024.png" alt="Тренировка">' : ''}
+                            ${i % 3 === 0 ? '<img src="/static/images/free-icon-diet-food-6566011.png" alt="Здоровое питание">' : ''}
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+
+        function createMeasurementCard() {
+            const currentDate = new Date(startDate);
+            return `
+                <div class="measurement-card">
+                    <div class="title">Обхваты ${formatDate(currentDate)}</div>
+                        <div class="parameters">
+                            <div>
+                                <div class="icons"><img src="{{ url_for('static', filename='images/free-icon-size-13787053.png') }}" alt="Грудь"></div> 
+                                Грудь: <span class="measurement-value">90</span>
+                            </div>
+                            <div>
+                                <div class="icons"><img src="{{ url_for('static', filename='images/free-icon-diet-6454099.png') }}" alt="Талия"></div> 
+                                Талия: <span class="measurement-value">70</span>
+                            </div>
+                            <div>
+                                <div class="icons"><img src="{{ url_for('static', filename='images/free-icon-bicep-6750786.png') }}" alt="Бицепс"></div> 
+                                Бицепс: <span class="measurement-value">30</span>
+                            </div>
+                            <div>
+                                <div class="icons"><img src="{{ url_for('static', filename='images/free-icon-hip-16972516.png') }}" alt="Бедра"></div> 
+                                Бедра: <span class="measurement-value">95</span>
+                            </div>
+                            <div>
+                                <div class="icons"><img src="{{ url_for('static', filename='images/free-icon-thigh-6895985.png') }}" alt="Бедро"></div> 
+                                Бедро: <span class="measurement-value">50</span>
+                            </div>
+                            <div>
+                                <div class="icons"><img src="{{ url_for('static', filename='images/free-icon-knee-2222688.png') }}" alt="Колено"></div> 
+                                Колено: <span class="measurement-value">35</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            `;
+        }
+
+        const daysContainer1 = document.getElementById('days-container1');
+        const daysContainer2 = document.getElementById('days-container2');
+        const daysContainer3 = document.getElementById('days-container3');
+        for (let i = 0; i < days; i++) {
+            //if (i === 10) daysContainer.innerHTML += createMeasurementCard(new Date(startDate.getTime() + i * 86400000));
+            if (i < 11) {
+                daysContainer1.innerHTML += createDayCard(i);
+            } else if (i < 11) {
+                daysContainer2.innerHTML += createDayCard(i);
+            } else {
+                daysContainer3.innerHTML += createDayCard(i);
+            }
+        }
+
+        const measuremenContainer1 = document.getElementById('measurement-container1');
+        measuremenContainer1.innerHTML += createMeasurementCard();
+        const measuremenContainer2 = document.getElementById('measurement-container2');
+        measuremenContainer2.innerHTML += createMeasurementCard();
+        const measuremenContainer3 = document.getElementById('measurement-container3');
+        measuremenContainer3.innerHTML += createMeasurementCard();
+
+        function openEditModal(date, weight, note, menu, workout) {
+            document.getElementById('modal-date').innerText = date;
+            document.getElementById('weight').value = weight || '';
+            document.getElementById('note').value = note || '';
+            document.getElementById('menu').checked = menu || false;
+            document.getElementById('workout').checked = workout || false;
+            
+            var modal = new bootstrap.Modal(document.getElementById('editDayModal'));
+            modal.show();
+        }
+
+        function submitForm() {
+            alert('Данные сохранены!');
+            var modal = bootstrap.Modal.getInstance(document.getElementById('editDayModal'));
+            modal.hide();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.day-card').forEach(card => {
+                card.addEventListener('dblclick', function () {
+                    const date = this.querySelector('.date').innerText;
+                    const weight = this.querySelector('.weight').innerText.replace(' кг', '');
+                    const note = this.querySelector('.note').innerText;
+                    const menu = this.querySelector('img[alt="Здоровое питание"]') !== null;
+                    const workout = this.querySelector('img[alt="Тренировка"]') !== null;
+                    openEditModal(date, weight, note, menu, workout);
+                });
+            });
+        });
+
+
+        // Функция для открытия модального окна редактирования measurement-card
+        function openMeasurementEditModal(date, chest, waist, biceps, hips, thigh, knee) {
+            document.getElementById('measurement-modal-date').innerText = date;
+            document.getElementById('chest').value = chest || '';
+            document.getElementById('waist').value = waist || '';
+            document.getElementById('biceps').value = biceps || '';
+            document.getElementById('hips').value = hips || '';
+            document.getElementById('thigh').value = thigh || '';
+            document.getElementById('knee').value = knee || '';
+
+            var modal = new bootstrap.Modal(document.getElementById('editMeasurementModal'));
+            modal.show();
+        }
+
+        // Функция для обработки сохранения данных из модального окна
+        function submitMeasurementForm() {
+            alert('Измерения сохранены!');
+            var modal = bootstrap.Modal.getInstance(document.getElementById('editMeasurementModal'));
+            modal.hide();
+        }
+
+        // Добавление обработчика двойного клика по measurement-card
+       /* document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.measurement-card').forEach(card => {
+                card.addEventListener('dblclick', function () {
+                    const date = this.querySelector('.title').innerText.replace('Обхваты ', '');
+
+                    // Получаем все элементы со значениями по классу .measurement-value
+                    const values = this.querySelectorAll('.measurement-value');
+
+                    // Извлекаем числовые значения напрямую
+                    const chest = values[0].innerText;
+                    const waist = values[1].innerText;
+                    const biceps = values[2].innerText;
+                    const hips = values[3].innerText;
+                    const thigh = values[4].innerText;
+                    const knee = values[5].innerText;
+                });
+            });
+        });*/
+
+        // Добавление обработчика двойного клика по measurement-card
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.measurement-card').forEach(card => {
+                card.addEventListener('dblclick', function () {
+                    const date = this.querySelector('.title').innerText.replace('Обхваты ', '');
+                    const params = this.querySelectorAll('.measurement-value ');
+                    const chest = params[0].innerText;
+                    const waist = params[1].innerText;
+                    const biceps = params[2].innerText;
+                    const hips = params[3].innerText;
+                    const thigh = params[4].innerText;
+                    const knee = params[5].innerText;
+                    
+                    openMeasurementEditModal(date, chest, waist, biceps, hips, thigh, knee);
+                });
+            });
+        });
+
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
